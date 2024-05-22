@@ -5,9 +5,8 @@ import android.content.Context;
 import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderDebug;
 import com.github.catvod.utils.SpUtil;
-
 import com.github.catvod.utils.m3u8.AdFilter;
-import com.github.catvod.utils.m3u8.Notify;
+
 import org.json.JSONObject;
 
 import java.net.URLEncoder;
@@ -20,19 +19,17 @@ public class Caiji extends Spider {
     @Override
     public void init(Context context, String extend) throws Exception {
         super.init(context, extend);
-        JSONObject obj = SpUtil.safeObject(extend);
+        JSONObject obj = new JSONObject(SpUtil.decode(extend));
         siteUrl = obj.getString("siteUrl");
-        if (obj.has("rulesUrl")) AdFilter.setRules(obj.getString("rulesUrl"));
-        else AdFilter.setRuleMap(extend);
-        Notify.show("采集对象初始化完成。。。");
-
         // 这里要进行 rules 规则初始化
         if (obj.has("rulesUrl")) {
             String rulesUrl = obj.getString("rulesUrl");
-            System.out.println("rulesUrl链接是：" + rulesUrl);
+            AdFilter.setRules(rulesUrl);
+            SpiderDebug.log("rulesUrl链接是：" + rulesUrl);
         } else {
             JSONObject rule = obj.getJSONObject("rule");
             System.out.println(rule);
+            AdFilter.setRuleMap(siteUrl, rule);
         }
         SpiderDebug.log("采集类初始化完成。。。");
     }
@@ -60,7 +57,7 @@ public class Caiji extends Spider {
 
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
-        return SpUtil.result(0, SpUtil.getHeader(), "", id);
+        return SpUtil.result(0, SpUtil.getHeader(), "", AdFilter.proxyM3U8(id, siteUrl));
     }
 
     @Override

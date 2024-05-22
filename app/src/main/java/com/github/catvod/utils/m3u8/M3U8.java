@@ -3,7 +3,8 @@ package com.github.catvod.utils.m3u8;
 import android.net.Uri;
 import android.text.TextUtils;
 
-import com.github.catvod.utils.okhttp.OkHttpUtil;
+import com.github.catvod.crawler.SpiderDebug;
+import com.github.catvod.utils.SpUtil;
 import com.google.common.net.HttpHeaders;
 
 import java.io.ByteArrayInputStream;
@@ -15,7 +16,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import okhttp3.Headers;
-import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
@@ -39,10 +39,6 @@ public class M3U8 {
         return regex.contains(TAG_DISCONTINUITY) || regex.contains(TAG_MEDIA_DURATION) || regex.contains(TAG_ENDLIST) || regex.contains(TAG_KEY) || isDouble(regex);
     }
 
-    private static OkHttpClient getOkHttpClient() {
-        return OkHttpUtil.defaultClient();
-    }
-
     public static Object[] proxy(Map<String, String> params) throws Exception {
         Map<String, String> header = new HashMap<>();
         header.put("User-Agent", userAgent);
@@ -58,7 +54,7 @@ public class M3U8 {
     public static String get(String url, Map<String, String> headers, String siteUrl) {
         try {
             if (TextUtils.isEmpty(url)) return "";
-            Response response = getOkHttpClient().newCall(new Request.Builder().url(url).headers(getHeader(headers)).build()).execute();
+            Response response = SpUtil.getOkHttpClient().newCall(new Request.Builder().url(url).headers(getHeader(headers)).build()).execute();
             String result = response.body().string();
             result = result.replaceAll("\r\n", "\n");
             Matcher matcher = Pattern.compile("#EXT-X-STREAM-INF(.*)\\n?(.*)").matcher(result);
@@ -66,9 +62,16 @@ public class M3U8 {
             StringBuilder sb = new StringBuilder();
             for (String line : result.split("\n")) sb.append(shouldResolve(line) ? resolve(url, line) : line).append("\n");
             List<String> ads = AdFilter.getRegex(Uri.parse(url));
-            if (!TextUtils.isEmpty(siteUrl)) ads.addAll(AdFilter.getRegex(siteUrl));
+            List<String> ads2 = null;
+            if (!TextUtils.isEmpty(siteUrl)) {
+                ads2 = AdFilter.getRegex(siteUrl);
+                SpiderDebug.log("M3U8 get() 正常走到这个位置。。。");
+            }
             String s1 = sb.toString();
             String s2 = clean(s1, ads);
+            if (ads2 != null) {
+                s2 = clean(s2, ads2);
+            }
             if (s1.length() != s2.length()) Notify.show("净化成功！");
             return s2;
         } catch (Exception e) {

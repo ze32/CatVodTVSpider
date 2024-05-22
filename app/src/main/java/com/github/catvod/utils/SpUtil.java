@@ -1,5 +1,6 @@
 package com.github.catvod.utils;
 
+import android.util.Base64;
 import com.github.catvod.net.OkHttp;
 
 import okhttp3.Headers;
@@ -7,7 +8,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -106,23 +106,17 @@ public class SpUtil {
         }
     }
 
-    public static JSONObject parse(String json) {
-        try {
-            return new JSONObject(json);
-        } catch (JSONException e) {
-            return new JSONObject();
-        }
+    // Base64编码
+    public static String encode(String input) {
+        byte[] data = input.getBytes();
+        return Base64.encodeToString(data, Base64.DEFAULT);
     }
 
-    public static JSONObject safeObject(String json) {
-        try {
-            JSONObject obj = parse(json);
-            return obj;
-        } catch (JSONException e) {
-            return new JSONObject();
-        }
+    // Base64解码
+    public static String decode(String input) {
+        byte[] data = Base64.decode(input, Base64.DEFAULT);
+        return new String(data);
     }
-
 
     // ######################### 常用方法
     public static JSONArray classes(List<String> typeIds, List<String> typeNames) throws Exception {
@@ -166,7 +160,7 @@ public class SpUtil {
         return result.toString();
     }
 
-    public static String result(JSONObject vod) {
+    public static String result(JSONObject vod) throws Exception {
         JSONArray list = new JSONArray();
         list.put(vod);
         JSONObject result = new JSONObject();
@@ -174,13 +168,13 @@ public class SpUtil {
         return result.toString();
     }
 
-    public static String result(JSONArray videos) {
+    public static String result(JSONArray videos) throws Exception {
         JSONObject result = new JSONObject();
         result.put("list", videos);
         return result.toString();
     }
 
-    public static String result(int parse, Map<String, String> headers, String playUrl, String url) {
+    public static String result(int parse, Map<String, String> headers, String playUrl, String url) throws Exception {
         JSONObject result = new JSONObject();
         result.put("parse", parse);
         result.put("header", headers == null ? "" : headers.toString());

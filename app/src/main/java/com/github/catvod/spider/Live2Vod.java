@@ -4,8 +4,7 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.github.catvod.crawler.Spider;
-//import com.github.catvod.net.OkHttp;
-import com.github.catvod.utils.okhttp.OkHttpUtil;
+import com.github.catvod.utils.SpUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -29,11 +28,6 @@ public class Live2Vod extends Spider {
 
     private final String userAgent = "okhttp/3.12.11";
 
-    private String req(String url, Map<String, String> header) {
-//        return OkHttp.string(url, header);
-        return OkHttpUtil.string(url, header);
-    }
-
     private Map<String, String> getHeader() {
         Map<String, String> header = new HashMap<>();
         header.put("User-Agent", userAgent);
@@ -51,7 +45,7 @@ public class Live2Vod extends Spider {
         JSONArray classes = new JSONArray();
         // 如果是远程配置文件的话，尝试发起请求查询
         if (!myExtend.contains("$")) {
-            JSONArray jsonArray = new JSONArray(req(myExtend, getHeader()));
+            JSONArray jsonArray = new JSONArray(SpUtil.req(myExtend, getHeader()));
             for (int i = 0; i < jsonArray.length(); i++) {
                 JSONObject liveObj = jsonArray.getJSONObject(i);
                 String name = liveObj.optString("name");
@@ -113,7 +107,7 @@ public class Live2Vod extends Spider {
         String diyPic = typeIdObj.optString("pic");
         String group = typeIdObj.optString("group");
         String circuit = typeIdObj.optString("circuit");
-        String content = req(url, getHeader());
+        String content = SpUtil.req(url, getHeader());
         ByteArrayInputStream is = new ByteArrayInputStream(content.getBytes());
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(is));
         JSONArray videos = new JSONArray();

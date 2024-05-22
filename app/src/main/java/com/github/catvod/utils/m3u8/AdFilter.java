@@ -6,7 +6,7 @@ import android.text.TextUtils;
 import com.github.catvod.bean.Rule;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.spider.Proxy;
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.utils.SpUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,15 +25,13 @@ public class AdFilter {
 
     public static Map<String, String> getHeader() {
         Map<String, String> header = new HashMap<>();
-        header.put("User-Agent", BaseSpider.CHROME);
+        header.put("User-Agent", SpUtil.CHROME);
         return header;
     }
 
-    public static void setRuleMap(String extend) throws Exception {
-        JSONObject jsonObject = new JSONObject(extend);
-        String siteUrl = jsonObject.getString("siteUrl");
+    public static void setRuleMap(String siteUrl, JSONObject ruleObject) throws Exception {
         Rule rule = new Rule();
-        rule.setRegex(JSONArray2List(jsonObject.getJSONObject("rule").getJSONArray("regex")));
+        rule.setRegex(JSONArray2List(ruleObject.getJSONArray("regex")));
         ruleMap.put(siteUrl, rule);
     }
 
