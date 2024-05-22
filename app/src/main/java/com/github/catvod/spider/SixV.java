@@ -47,13 +47,7 @@ public class SixV extends Spider {
             String name = SpUtil.removeHtmlTag(item.attr("title"));
             String pic = item.select("img").attr("src");
             String remark = "";
-
-            JSONObject vod = new JSONObject();
-            vod.put("vod_id", vodId);
-            vod.put("vod_name", name);
-            vod.put("vod_pic", pic);
-            vod.put("vod_remarks", remark);
-            videos.put(vod);
+            videos.put(SpUtil.vod(vodId, name, pic, remark));
         }
         return videos;
     }
@@ -117,27 +111,17 @@ public class SixV extends Spider {
 
     @Override
     public String homeContent(boolean filter) throws Exception {
-        JSONArray classes = new JSONArray();
         List<String> typeIds = Arrays.asList("xijupian", "dongzuopian", "aiqingpian", "kehuanpian", "kongbupian", "juqingpian", "zhanzhengpian", "jilupian", "donghuapian", "dianshiju/guoju", "dianshiju/rihanju", "dianshiju/oumeiju");
         List<String> typeNames = Arrays.asList("喜剧片", "动作片", "爱情片", "科幻片", "恐怖片", "剧情片", "战争片", "纪录片", "动画片", "国剧", "日韩剧", "欧美剧");
-        for (int i = 0; i < typeIds.size(); i++) {
-            JSONObject c = new JSONObject();
-            c.put("type_id", typeIds.get(i));
-            c.put("type_name", typeNames.get(i));
-            classes.put(c);
-        }
-        JSONObject result = new JSONObject();
-        result.put("class", classes);
-        return result.toString();
+        JSONArray classes = SpUtil.classes(typeIds, typeNames);
+        return SpUtil.result(classes, null, null);
     }
 
     @Override
     public String homeVideoContent() throws Exception {
         String html = SpUtil.req(siteUrl, SpUtil.getHeader(siteUrl + "/"));
         JSONArray videos = parseVodListFromDoc(html);
-        JSONObject result = new JSONObject();
-        result.put("list", videos);
-        return result.toString();
+        return SpUtil.result(videos);
     }
 
     @Override
@@ -146,14 +130,7 @@ public class SixV extends Spider {
         if (!pg.equals("1")) cateUrl += "/index_" + pg + ".html";
         String html = SpUtil.req(cateUrl, SpUtil.getHeader(siteUrl + "/"));
         JSONArray videos = parseVodListFromDoc(html);
-        int page = Integer.parseInt(pg), count = 999, limit = videos.length(), total = Integer.MAX_VALUE;
-        JSONObject result = new JSONObject();
-        result.put("page", page);
-        result.put("pagecount", count);
-        result.put("limit", limit);
-        result.put("total", total);
-        result.put("list", videos);
-        return result.toString();
+        return SpUtil.result(pg, videos);
     }
 
     @Override
@@ -198,9 +175,7 @@ public class SixV extends Spider {
             vod.put("vod_play_from", TextUtils.join("$$$", playMap.keySet()));
             vod.put("vod_play_url", TextUtils.join("$$$", playMap.values()));
         }
-        JSONArray jsonArray = new JSONArray().put(vod);
-        JSONObject result = new JSONObject().put("list", jsonArray);
-        return result.toString();
+        return SpUtil.result(vod);
     }
 
     @Override
@@ -235,18 +210,11 @@ public class SixV extends Spider {
             html = SpUtil.req(searchUrl, SpUtil.getHeader());
         }
         JSONArray videos = parseVodListFromDoc(html);
-        JSONObject result = new JSONObject();
-        result.put("list", videos);
-        return result.toString();
+        return SpUtil.result(videos);
     }
 
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
-        JSONObject result = new JSONObject();
-        result.put("parse", 0);
-        result.put("header", "");
-        result.put("playUrl", "");
-        result.put("url", id);
-        return result.toString();
+        return SpUtil.result(0, null, "", id);
     }
 }

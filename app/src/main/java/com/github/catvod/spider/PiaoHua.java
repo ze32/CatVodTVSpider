@@ -55,18 +55,9 @@ public class PiaoHua extends Spider {
 
     @Override
     public String homeContent(boolean filter) throws Exception {
-        JSONArray classes = new JSONArray();
         List<String> typeIds = Arrays.asList("/dongzuo/", "/xiju/", "/aiqing/", "/kehuan/", "/juqing/", "/xuanyi/", "/zhanzheng/", "/kongbu/", "/zainan/", "/dongman/", "/jilu/");
         List<String> typeNames = Arrays.asList("动作片", "喜剧片", "爱情片", "科幻片", "剧情片", "悬疑片", "战争片", "恐怖片", "灾难片", "动漫", "纪录片");
-        for (int i = 0; i < typeIds.size(); i++) {
-            JSONObject obj = new JSONObject();
-            obj.put("type_id", typeIds.get(i));
-            obj.put("type_name", typeNames.get(i));
-            classes.put(obj);
-        }
-        JSONObject result = new JSONObject();
-        result.put("class", classes);
-        return result.toString();
+        return SpUtil.result(SpUtil.classes(typeIds, typeNames), null, null);
     }
 
     @Override
@@ -84,20 +75,9 @@ public class PiaoHua extends Spider {
             String vid = item.select("strong a").attr("href");
             String name = item.select("strong").text();
             String pic = item.select("img").attr("src");
-
-
-            JSONObject vod = new JSONObject();
-            vod.put("vod_id", vid);
-            vod.put("vod_name", name);
-            vod.put("vod_pic", pic);
-            vod.put("vod_remarks", "");
-            videos.put(vod);
+            videos.put(SpUtil.vod(vid, name, pic, ""));
         }
-
-        JSONObject result = new JSONObject();
-        result.put("pagecount", 999);
-        result.put("list", videos);
-        return result.toString();
+        return SpUtil.result(pg, videos);
     }
 
     @Override
@@ -145,11 +125,7 @@ public class PiaoHua extends Spider {
             vod.put("vod_play_from", vod_play_from);
             vod.put("vod_play_url", vod_play_url);
         }
-
-        JSONArray jsonArray = new JSONArray().put(vod);
-        JSONObject result = new JSONObject();
-        result.put("list", jsonArray);
-        return result.toString();
+        return SpUtil.result(vod);
     }
 
     @Override
@@ -162,26 +138,13 @@ public class PiaoHua extends Spider {
             String vid = item.select("strong a").attr("href");
             String name = item.select("strong").text();
             String pic = item.select("img").attr("src");
-
-            JSONObject vod = new JSONObject();
-            vod.put("vod_id", vid);
-            vod.put("vod_name", name);
-            vod.put("vod_pic", pic);
-            vod.put("vod_remarks", "");
-            videos.put(vod);
+            videos.put(SpUtil.vod(vid, name, pic, ""));
         }
-        JSONObject result = new JSONObject();
-        result.put("list", videos);
-        return result.toString();
+        return SpUtil.result(videos);
     }
 
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
-        JSONObject result = new JSONObject();
-        result.put("parse", 0);
-        result.put("header", "");
-        result.put("playUrl", "");
-        result.put("url", id);
-        return result.toString();
+        return SpUtil.result(0, null, "", id);
     }
 }
