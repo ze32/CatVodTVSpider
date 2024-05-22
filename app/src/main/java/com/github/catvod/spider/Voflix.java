@@ -3,7 +3,8 @@ package com.github.catvod.spider;
 import android.content.Context;
 import android.text.TextUtils;
 
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.crawler.Spider;
+import com.github.catvod.utils.SpUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -27,11 +28,11 @@ import java.util.regex.Pattern;
  * @author zhixc
  * Vodflix
  */
-public class Voflix extends BaseSpider {
+public class Voflix extends Spider {
     private String siteUrl;
 
     private String clean(String str) {
-        return removeHtmlTag(str).replace("\n", "").replace("\t", "").trim();
+        return SpUtil.removeHtmlTag(str).replace("\n", "").replace("\t", "").trim();
     }
 
     private JSONArray parseVodList(Elements items) throws Exception {
@@ -100,7 +101,7 @@ public class Voflix extends BaseSpider {
     @Override
     public String homeVideoContent() throws Exception {
         String hotUrl = siteUrl + "/label/new.html";
-        String html = req(hotUrl, getHeader());
+        String html = SpUtil.req(hotUrl, SpUtil.getHeader());
         Elements items = Jsoup.parse(html).select(".module-items").get(0).select(".module-item");
         JSONArray videos = parseVodList(items);
         JSONObject result = new JSONObject();
@@ -125,7 +126,7 @@ public class Voflix extends BaseSpider {
         String by = extend.get("by") == null ? "" : extend.get("by");
         String classType = extend.get("class") == null ? "" : extend.get("class");
         String cateUrl = siteUrl + String.format("/show/%s-%s-%s-%s-----%s---%s.html", cateId, area, by, classType, pg, year);
-        String html = req(cateUrl, getHeader());
+        String html = SpUtil.req(cateUrl, SpUtil.getHeader());
         Elements items = Jsoup.parse(html).select(".module-items .module-item");
         JSONArray videos = parseVodList(items);
         int page = Integer.parseInt(pg), count = Integer.MAX_VALUE, limit = 40, total = Integer.MAX_VALUE;
@@ -148,7 +149,7 @@ public class Voflix extends BaseSpider {
     public String detailContent(List<String> ids) throws Exception {
         String vodId = ids.get(0);
         String detailUrl = siteUrl + vodId;
-        String html = req(detailUrl, getHeader());
+        String html = SpUtil.req(detailUrl, SpUtil.getHeader());
         Document doc = Jsoup.parse(html);
         String name = doc.select(".module-info-heading > h1").text();
         String pic = doc.select("[class=ls-is-cached lazy lazyload]").attr("data-original");
@@ -161,9 +162,9 @@ public class Voflix extends BaseSpider {
             year = elements.get(0).select("a").text();
             area = elements.get(1).select("a").text();
         }
-        String remark = clean(find("备注：(.*?)</div>", html));
-        String actor = clean(find("主演：(.*?)</div>", html));
-        String director = clean(find("导演：(.*?)</div>", html));
+        String remark = clean(SpUtil.find("备注：(.*?)</div>", html));
+        String actor = clean(SpUtil.find("主演：(.*?)</div>", html));
+        String director = clean(SpUtil.find("导演：(.*?)</div>", html));
         String description = doc.select(".module-info-introduction-content").text();
 
         Elements sourceList = doc.select(".module-play-list");
@@ -212,7 +213,7 @@ public class Voflix extends BaseSpider {
     @Override
     public String searchContent(String key, boolean quick) throws Exception {
         String searchUrl = siteUrl + "/index.php/ajax/suggest?mid=1&wd=" + URLEncoder.encode(key) + "&limit=20";
-        String html = req(searchUrl, getHeader());
+        String html = SpUtil.req(searchUrl, SpUtil.getHeader());
         JSONArray jsonArray = new JSONObject(html).getJSONArray("list");
         JSONArray videos = new JSONArray();
         for (int i = 0; i < jsonArray.length(); i++) {
@@ -236,13 +237,13 @@ public class Voflix extends BaseSpider {
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
         String playPageUrl = siteUrl + id;
-        String html = req(playPageUrl, getHeader());
-        String playerConfigStr = find(Pattern.compile("player_aaaa=(.*?)</script>"), html);
+        String html = SpUtil.req(playPageUrl, SpUtil.getHeader());
+        String playerConfigStr = SpUtil.find(Pattern.compile("player_aaaa=(.*?)</script>"), html);
         String realPlayUrl = new JSONObject(playerConfigStr).optString("url");
         if (realPlayUrl.contains(".m3u8") || realPlayUrl.contains(".mp4")) {
             JSONObject result = new JSONObject();
             result.put("parse", 0);
-            result.put("header", getHeader().toString());
+            result.put("header", SpUtil.getHeader().toString());
             result.put("playUrl", "");
             result.put("url", realPlayUrl);
             return result.toString();

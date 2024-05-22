@@ -1,7 +1,8 @@
 package com.github.catvod.spider;
 
 //import com.github.catvod.utils.FileUtil;
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.crawler.Spider;
+import com.github.catvod.utils.SpUtil;
 
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -29,7 +30,7 @@ import java.util.regex.Pattern;
  * 快看资源(搜索播放)
  * 部分地区无法正常播放
  */
-public class KuaikanZy extends BaseSpider {
+public class KuaikanZy extends Spider {
     private final String OCR_API = "https://api.nn.ci/ocr/b64/text";
     private String cookie;
     private final String userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36";
@@ -114,7 +115,7 @@ public class KuaikanZy extends BaseSpider {
         for (String key : headerForImage.keySet()) {
             builder.addHeader(key, headerForImage.get(key));
         }
-        Response rsp = getOkHttpClient().newCall(builder.build()).execute();
+        Response rsp = SpUtil.getOkHttpClient().newCall(builder.build()).execute();
         cookie = rsp.header("Set-Cookie").split(";")[0];
 
         // 将图片进行 ocr 验证，得到识别后的验证码字符串
@@ -128,7 +129,7 @@ public class KuaikanZy extends BaseSpider {
         for (String key : headerForOCR.keySet()) {
             builder2.addHeader(key, headerForOCR.get(key));
         }
-        Response rsp2 = getOkHttpClient().newCall(builder2.build()).execute();
+        Response rsp2 = SpUtil.getOkHttpClient().newCall(builder2.build()).execute();
         String code = rsp2.body().string();
         rsp2.close();
         System.out.println("ocr接口识别图片结果：" + code);
@@ -141,7 +142,7 @@ public class KuaikanZy extends BaseSpider {
             builder3.addHeader(key, headerForVerify.get(key));
         }
         builder3.addHeader("Cookie", cookie);
-        Response rsp3 = getOkHttpClient().newCall(builder3.build()).execute();
+        Response rsp3 = SpUtil.getOkHttpClient().newCall(builder3.build()).execute();
         String verifiedResult = rsp3.body().string();
         rsp3.close();
         JSONObject result = new JSONObject(verifiedResult);
@@ -167,7 +168,7 @@ public class KuaikanZy extends BaseSpider {
         // 所以改成网页源码抓取了
         String vodId = ids.get(0);
         String link = "https://kkzy.tv/index.php/vod/detail/id/" + vodId + ".html";
-        String html = req(link, getHeader());
+        String html = SpUtil.req(link, SpUtil.getHeader());
         Document doc = Jsoup.parse(html);
         String name = doc.select(".countlist > h1").first().ownText();
         String pic = doc.select(".countimg > img").attr("src");
@@ -231,11 +232,11 @@ public class KuaikanZy extends BaseSpider {
     @Override
     public String searchContent(String key, boolean quick) throws Exception {
         String searchUrl = "https://kkzy.tv/index.php/vod/search.html?wd=" + URLEncoder.encode(key);
-        String html = req(searchUrl, getHeaderForSearch());
+        String html = SpUtil.req(searchUrl, getHeaderForSearch());
         if (html.contains("安全验证")) {
             Map<String, String> headerForSearch = getHeaderForSearch();
             headerForSearch.put("Cookie", getCookie());
-            html = req(searchUrl, headerForSearch);
+            html = SpUtil.req(searchUrl, headerForSearch);
         }
         Elements rows = Jsoup.parse(html).select("table[class=table align-middle] tbody > tr");
         JSONArray videos = new JSONArray();
@@ -265,7 +266,7 @@ public class KuaikanZy extends BaseSpider {
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
         JSONObject result = new JSONObject();
         result.put("parse", 0);
-        result.put("header", getHeader().toString());
+        result.put("header", SpUtil.getHeader().toString());
         result.put("playUrl", "");
         result.put("url", id);
         return result.toString();

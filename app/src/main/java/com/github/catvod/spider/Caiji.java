@@ -2,7 +2,9 @@ package com.github.catvod.spider;
 
 import android.content.Context;
 
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.crawler.Spider;
+import com.github.catvod.crawler.SpiderDebug;
+import com.github.catvod.utils.SpUtil;
 
 import org.json.JSONObject;
 
@@ -10,22 +12,29 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 
-public class Caiji extends BaseSpider {
+public class Caiji extends Spider {
     private String siteUrl;
 
     @Override
     public void init(Context context, String extend) throws Exception {
         super.init(context, extend);
-        JSONObject obj = safeObject(extend);
+        JSONObject obj = SpUtil.safeObject(extend);
         siteUrl = obj.getString("siteUrl");
-        String rulesUrl = obj.getString("rulesUrl");
-        // 这里要调用 AdFilter 类对 rules 进行初始化
-        // ...
+
+        // 这里要进行 rules 规则初始化
+        if (obj.has("rulesUrl")) {
+            String rulesUrl = obj.getString("rulesUrl");
+            System.out.println("rulesUrl链接是：" + rulesUrl);
+        } else {
+            JSONObject rule = obj.getJSONObject("rule");
+            System.out.println(rule);
+        }
+        SpiderDebug.log("采集类初始化完成。。。");
     }
 
     @Override
     public String homeContent(boolean filter) throws Exception {
-        String content = req(siteUrl, getHeader());
+        String content = SpUtil.req(siteUrl, SpUtil.getHeader());
         // JSONObject obj = new JSONObject(content);
         return content;
     }
@@ -33,25 +42,20 @@ public class Caiji extends BaseSpider {
     @Override
     public String categoryContent(String tid, String pg, boolean filter, HashMap<String, String> extend) throws Exception {
         String link = String.format("%s?ac=detail&t=%s&pg=%s", siteUrl, tid, pg);
-        String content = req(link, getHeader());
+        String content = SpUtil.req(link, SpUtil.getHeader());
         return content;
     }
 
     @Override
     public String detailContent(List<String> ids) throws Exception {
         String link = String.format("%s?ac=detail&ids=%s", siteUrl, ids.get(0));
-        String content = req(link, getHeader());
+        String content = SpUtil.req(link, SpUtil.getHeader());
         return content;
     }
 
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
-        JSONObject result = new JSONObject();
-        result.put("parse", 0);
-        result.put("header", getHeader().toString());
-        result.put("playUrl", "");
-        result.put("url", id);
-        return result.toString();
+        return SpUtil.result(0, SpUtil.getHeader(), "", id);
     }
 
     @Override
@@ -62,7 +66,7 @@ public class Caiji extends BaseSpider {
     @Override
     public String searchContent(String key, boolean quick, String pg) throws Exception {
         String link = String.format("%s?ac=detail&wd=%s&pg=%s", siteUrl, URLEncoder.encode(key), pg);
-        String content = req(link, getHeader());
+        String content = SpUtil.req(link, SpUtil.getHeader());
         return content;
     }
 }

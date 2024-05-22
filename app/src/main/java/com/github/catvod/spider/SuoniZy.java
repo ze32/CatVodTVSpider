@@ -1,7 +1,8 @@
 package com.github.catvod.spider;
 
 //import com.github.catvod.utils.FileUtil;
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.crawler.Spider;
+import com.github.catvod.utils.SpUtil;
 
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -28,7 +29,7 @@ import java.util.regex.Pattern;
  * @author zhixc
  * 索尼资源(仅搜索播放)
  */
-public class SuoniZy extends BaseSpider {
+public class SuoniZy extends Spider {
     private final String OCR_API = "https://api.nn.ci/ocr/b64/text";
     private String cookie;
     private Pattern detailPattern = Pattern.compile("/voddetail/(\\d+)\\.html");
@@ -38,7 +39,7 @@ public class SuoniZy extends BaseSpider {
         header.put("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
         header.put("accept-language", "zh-CN,zh;q=0.9");
         if (cookie != null) header.put("cookie", cookie);
-        header.put("user-agent", FIREFOX);
+        header.put("user-agent", SpUtil.FIREFOX);
         return header;
     }
 
@@ -47,13 +48,13 @@ public class SuoniZy extends BaseSpider {
         header.put("accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8");
         header.put("accept-language", "zh-CN,zh;q=0.9");
         header.put("referer", "https://suonizy.com/");
-        header.put("user-agent", FIREFOX);
+        header.put("user-agent", SpUtil.FIREFOX);
         return header;
     }
 
     private Map<String, String> getHeaderForOCR() {
         Map<String, String> header = new HashMap<>();
-        header.put("user-agent", FIREFOX);
+        header.put("user-agent", SpUtil.FIREFOX);
         return header;
     }
 
@@ -63,7 +64,7 @@ public class SuoniZy extends BaseSpider {
         header.put("accept-language", "zh-CN,zh;q=0.9");
         header.put("origin", "https://suonizy.com");
         header.put("referer", "https://suonizy.com/");
-        header.put("user-agent", FIREFOX);
+        header.put("user-agent", SpUtil.FIREFOX);
         return header;
     }
 
@@ -93,7 +94,7 @@ public class SuoniZy extends BaseSpider {
         for (String key : header.keySet()) {
             builder.addHeader(key, header.get(key));
         }
-        Response rsp = getOkHttpClient().newCall(builder.build()).execute();
+        Response rsp = SpUtil.getOkHttpClient().newCall(builder.build()).execute();
         cookie = rsp.header("Set-Cookie").split(";")[0];
 
         // 将图片进行 ocr 验证，得到识别后的验证码字符串
@@ -107,7 +108,7 @@ public class SuoniZy extends BaseSpider {
         for (String key : headerForOCR.keySet()) {
             builder2.addHeader(key, headerForOCR.get(key));
         }
-        Response rsp2 = getOkHttpClient().newCall(builder2.build()).execute();
+        Response rsp2 = SpUtil.getOkHttpClient().newCall(builder2.build()).execute();
         String code = rsp2.body().string();
         rsp2.close();
         System.out.println("ocr接口识别图片结果：" + code);
@@ -120,7 +121,7 @@ public class SuoniZy extends BaseSpider {
             builder3.addHeader(key, headerForVerify.get(key));
         }
         builder3.addHeader("Cookie", cookie);
-        Response rsp3 = getOkHttpClient().newCall(builder3.build()).execute();
+        Response rsp3 = SpUtil.getOkHttpClient().newCall(builder3.build()).execute();
         String verifiedResult = rsp3.body().string();
         rsp3.close();
         JSONObject result = new JSONObject(verifiedResult);
@@ -144,7 +145,7 @@ public class SuoniZy extends BaseSpider {
         // 所以改成网页源码抓取了
         String vodId = ids.get(0);
         String link = "https://suonizy.com/voddetail/" + vodId + ".html";
-        String html = req(link, getHeader());
+        String html = SpUtil.req(link, SpUtil.getHeader());
         Document doc = Jsoup.parse(html);
         String name = "";
         String pic = doc.select(".res-img").attr("src");
@@ -208,11 +209,11 @@ public class SuoniZy extends BaseSpider {
     @Override
     public String searchContent(String key, boolean quick) throws Exception {
         String searchUrl = "https://suonizy.com/vodsearch/-------------.html?wd=" + URLEncoder.encode(key);
-        String html = req(searchUrl, getHeaderForSearch());
+        String html = SpUtil.req(searchUrl, getHeaderForSearch());
         if (html.contains("安全验证")) {
             Map<String, String> headerForSearch = getHeaderForSearch();
             headerForSearch.put("Cookie", getCookie());
-            html = req(searchUrl, headerForSearch);
+            html = SpUtil.req(searchUrl, headerForSearch);
         }
         Elements rows = Jsoup.parse(html).select(".tab-box tbody > tr");
         JSONArray videos = new JSONArray();
@@ -242,7 +243,7 @@ public class SuoniZy extends BaseSpider {
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
         JSONObject result = new JSONObject();
         result.put("parse", 0);
-        result.put("header", getHeader().toString());
+        result.put("header", SpUtil.getHeader().toString());
         result.put("playUrl", "");
         result.put("url", id);
         return result.toString();

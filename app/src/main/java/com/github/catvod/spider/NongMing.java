@@ -2,7 +2,8 @@ package com.github.catvod.spider;
 
 import android.text.TextUtils;
 
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.crawler.Spider;
+import com.github.catvod.utils.SpUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,7 +26,7 @@ import java.util.regex.Pattern;
  * @author zhixc
  * 农民影视
  */
-public class NongMing extends BaseSpider {
+public class NongMing extends Spider {
     private final String siteUrl = "https://m.xiangdao.me";
 
     @Override
@@ -55,7 +56,7 @@ public class NongMing extends BaseSpider {
         String classType = extend.get("class") == null ? tid : extend.get("class");
 
         String cateUrl = siteUrl + String.format("/vod-list-id-%s-pg-%s-order--by-%s-class-0-year-%s-letter--area-%s-lang-.html", classType, pg, by, year, area);
-        String html = req(cateUrl, getMobileHeader());
+        String html = SpUtil.req(cateUrl, SpUtil.getMobileHeader());
         JSONArray videos = new JSONArray();
         Elements items = Jsoup.parse(html).select("[class=globalPicList] li > a");
         for (Element item : items) {
@@ -85,15 +86,15 @@ public class NongMing extends BaseSpider {
     public String detailContent(List<String> ids) throws Exception {
         String vodId = ids.get(0);
         String detailUrl = siteUrl + vodId;
-        String html = req(detailUrl, getMobileHeader());
+        String html = SpUtil.req(detailUrl, SpUtil.getMobileHeader());
         Document doc = Jsoup.parse(html);
         String name = doc.select(".page-hd a").attr("title");
         String pic = doc.select(".page-hd img").attr("src");
         String typeName = doc.select(".type-title").text();
-        String year = find(Pattern.compile("年代:.*?<a.*?>(.*?)</a>"), html);
-        String remark = find(Pattern.compile("状态:&nbsp;(.*?)</div"), html).replaceAll("</?[^>]+>", "");
-        String actor = removeHtmlTag(find(Pattern.compile("主演:&nbsp;(.*?)</div"), html).replaceAll("&nbsp;&nbsp;", "").replaceAll("&nbsp;", ","));
-        String director = removeHtmlTag(find(Pattern.compile("导演:&nbsp;(.*?)</div"), html).replaceAll("&nbsp;&nbsp;", "").replaceAll("&nbsp;", ","));
+        String year = SpUtil.find(Pattern.compile("年代:.*?<a.*?>(.*?)</a>"), html);
+        String remark = SpUtil.find(Pattern.compile("状态:&nbsp;(.*?)</div"), html).replaceAll("</?[^>]+>", "");
+        String actor = SpUtil.removeHtmlTag(SpUtil.find(Pattern.compile("主演:&nbsp;(.*?)</div"), html).replaceAll("&nbsp;&nbsp;", "").replaceAll("&nbsp;", ","));
+        String director = SpUtil.removeHtmlTag(SpUtil.find(Pattern.compile("导演:&nbsp;(.*?)</div"), html).replaceAll("&nbsp;&nbsp;", "").replaceAll("&nbsp;", ","));
         String description = doc.select(".detail-con p").text().replaceAll("简 介：", "");
 
         Elements sourceList = doc.select("[class=numList]");
@@ -134,7 +135,7 @@ public class NongMing extends BaseSpider {
     @Override
     public String searchContent(String key, boolean quick) throws Exception {
         String searchUrl = siteUrl + "/index.php?m=vod-search&wd=" + URLEncoder.encode(key);
-        String html = req(searchUrl, getMobileHeader());
+        String html = SpUtil.req(searchUrl, SpUtil.getMobileHeader());
         JSONArray videos = new JSONArray();
         Elements items = Jsoup.parse(html).select("[id=data_list] li");
         for (Element item : items) {
@@ -159,7 +160,7 @@ public class NongMing extends BaseSpider {
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
         JSONObject result = new JSONObject();
         result.put("parse", 1);// 1=嗅探  0=直连
-        result.put("header", getMobileHeader().toString());
+        result.put("header", SpUtil.getMobileHeader().toString());
         result.put("playUrl", "");
         result.put("url", id);
         return result.toString();
