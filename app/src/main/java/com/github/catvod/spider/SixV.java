@@ -2,7 +2,8 @@ package com.github.catvod.spider;
 
 import android.text.TextUtils;
 
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.crawler.Spider;
+import com.github.catvod.utils.SpUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -29,7 +30,7 @@ import okhttp3.Response;
  * @author zhixc
  * 6V电影网（新版页面）
  */
-public class SixV extends BaseSpider {
+public class SixV extends Spider {
     // 可用域名：
     //   https://www.6vdy.org
     //   https://www.66s6.cc
@@ -43,7 +44,7 @@ public class SixV extends BaseSpider {
         Elements items = Jsoup.parse(html).select("#post_container [class=zoom]");
         for (Element item : items) {
             String vodId = item.attr("href");
-            String name = removeHtmlTag(item.attr("title"));
+            String name = SpUtil.removeHtmlTag(item.attr("title"));
             String pic = item.select("img").attr("src");
             String remark = "";
 
@@ -58,8 +59,8 @@ public class SixV extends BaseSpider {
     }
 
     private String getActor(String html) {
-        String actor = find(Pattern.compile("◎演　　员　(.*?)</p>"), html);
-        if ("".equals(actor)) actor = find(Pattern.compile("◎主　　演　(.*?)</p>"), html);
+        String actor = SpUtil.find(Pattern.compile("◎演　　员　(.*?)</p>"), html);
+        if ("".equals(actor)) actor = SpUtil.find(Pattern.compile("◎主　　演　(.*?)</p>"), html);
         return clean(actor);
     }
 
@@ -68,11 +69,11 @@ public class SixV extends BaseSpider {
     }
 
     private String getDirector(String html) {
-        return clean(find(Pattern.compile("◎导　　演　(.*?)<br>"), html));
+        return clean(SpUtil.find(Pattern.compile("◎导　　演　(.*?)<br>"), html));
     }
 
     private String getDescription(String html) {
-        return clean(find(Pattern.compile("◎简　　介(.*?)<hr", Pattern.DOTALL), html)).replaceAll("\n", "").replaceAll("　", "").replaceAll("hellip;", "").replaceAll("ldquo;", "【").replaceAll("rdquo;", "】");
+        return clean(SpUtil.find(Pattern.compile("◎简　　介(.*?)<hr", Pattern.DOTALL), html)).replaceAll("\n", "").replaceAll("　", "").replaceAll("hellip;", "").replaceAll("ldquo;", "【").replaceAll("rdquo;", "】");
     }
 
     private boolean isMovie(String vodId) {
@@ -132,7 +133,7 @@ public class SixV extends BaseSpider {
 
     @Override
     public String homeVideoContent() throws Exception {
-        String html = req(siteUrl, getHeader(siteUrl + "/"));
+        String html = SpUtil.req(siteUrl, SpUtil.getHeader(siteUrl + "/"));
         JSONArray videos = parseVodListFromDoc(html);
         JSONObject result = new JSONObject();
         result.put("list", videos);
@@ -143,7 +144,7 @@ public class SixV extends BaseSpider {
     public String categoryContent(String tid, String pg, boolean filter, HashMap<String, String> extend) throws Exception {
         String cateUrl = siteUrl + "/" + tid;
         if (!pg.equals("1")) cateUrl += "/index_" + pg + ".html";
-        String html = req(cateUrl, getHeader(siteUrl + "/"));
+        String html = SpUtil.req(cateUrl, SpUtil.getHeader(siteUrl + "/"));
         JSONArray videos = parseVodListFromDoc(html);
         int page = Integer.parseInt(pg), count = 999, limit = videos.length(), total = Integer.MAX_VALUE;
         JSONObject result = new JSONObject();
@@ -159,7 +160,7 @@ public class SixV extends BaseSpider {
     public String detailContent(List<String> ids) throws Exception {
         String vodId = ids.get(0);
         String detailUrl = siteUrl + vodId;
-        String html = req(detailUrl, getHeader());
+        String html = SpUtil.req(detailUrl, SpUtil.getHeader());
         Document doc = Jsoup.parse(html);
         Elements sourceList = doc.select("#post_content");
         Map<String, String> playMap = isMovie(vodId) ? parsePlayMapForMovieFromDoc(sourceList) : parsePlayMapFromDoc(sourceList);
@@ -167,13 +168,13 @@ public class SixV extends BaseSpider {
         String partHTML = doc.select(".context").html();
         String name = doc.select(".article_container > h1").text();
         String pic = doc.select("#post_content img").attr("src");
-        String typeName = find(Pattern.compile("◎类　　别　(.*?)<br>"), partHTML);
-        String year = find(Pattern.compile("◎年　　代　(.*?)<br>"), partHTML);
-        String area = find(Pattern.compile("◎产　　地　(.*?)<br>"), partHTML);
-        String remark = "上映日期：" + find(Pattern.compile("◎上映日期　(.*?)<br>"), partHTML);
+        String typeName = SpUtil.find(Pattern.compile("◎类　　别　(.*?)<br>"), partHTML);
+        String year = SpUtil.find(Pattern.compile("◎年　　代　(.*?)<br>"), partHTML);
+        String area = SpUtil.find(Pattern.compile("◎产　　地　(.*?)<br>"), partHTML);
+        String remark = "上映日期：" + SpUtil.find(Pattern.compile("◎上映日期　(.*?)<br>"), partHTML);
         String actor = getActor(partHTML);
         String director = getDirector(partHTML);
-        String description = removeHtmlTag(getDescription(partHTML));
+        String description = SpUtil.removeHtmlTag(getDescription(partHTML));
 
         // 由于部分信息过长，故进行一些调整，将年份、地区等信息放到 类别、备注里面
         typeName += " 地区:" + area;
@@ -216,22 +217,22 @@ public class SixV extends BaseSpider {
             RequestBody requestBody = RequestBody.create(MediaType.parse("application/x-www-form-urlencoded"), formData);
             Request request = new Request.Builder()
                     .url(searchUrl)
-                    .addHeader("User-Agent", CHROME)
+                    .addHeader("User-Agent", SpUtil.CHROME)
                     .addHeader("Origin", siteUrl)
                     .addHeader("Referer", siteUrl + "/")
                     .addHeader("Content-Type", "application/x-www-form-urlencoded")
                     .post(requestBody)
                     .build();
-            Response response = newCall(request);
+            Response response = SpUtil.newCall(request);
             if (!response.isSuccessful()) return "";
             String[] split = String.valueOf(response.request().url()).split("\\?searchid=");
             nextSearchUrlPrefix = split[0] + "index.php?page=";
             nextSearchUrlSuffix = "&searchid=" + split[1];
-            html = req(response, "UTF-8");
+            html = SpUtil.req(response, "UTF-8");
         } else {
             int page = Integer.parseInt(pg) - 1;
             searchUrl = nextSearchUrlPrefix + page + nextSearchUrlSuffix;
-            html = req(searchUrl, getHeader());
+            html = SpUtil.req(searchUrl, SpUtil.getHeader());
         }
         JSONArray videos = parseVodListFromDoc(html);
         JSONObject result = new JSONObject();

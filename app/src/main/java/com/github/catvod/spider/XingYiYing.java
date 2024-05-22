@@ -1,6 +1,7 @@
 package com.github.catvod.spider;
 
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.crawler.Spider;
+import com.github.catvod.utils.SpUtil;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -21,7 +22,7 @@ import java.util.regex.Pattern;
  * @author zhixc
  * 星易影
  */
-public class XingYiYing extends BaseSpider {
+public class XingYiYing extends Spider {
     private final String siteUrl = "https://www.xingyiying.com";
 
     private String parseVodInfo(Element element) {
@@ -37,7 +38,7 @@ public class XingYiYing extends BaseSpider {
         // https://www.xingyiying.com/index.php/vod/detail/id/183491.html
         // https://www.xingyiying.com/index.php/vod/detail/id/31606.html
         String detailUrl = siteUrl + "/index.php/vod/detail/id/" + vodId + ".html";
-        String html = req(detailUrl, getHeader());
+        String html = SpUtil.req(detailUrl, SpUtil.getHeader());
         Document doc = Jsoup.parse(html);
         String name = doc.select("h1").text();
         String pic = doc.select(".module-info-poster img").attr("data-original");
@@ -111,7 +112,7 @@ public class XingYiYing extends BaseSpider {
 //        if (!pg.equals("1")) searchUrl = siteUrl + "/s-" + keyword + "---------" + pg + ".html";
         if (!pg.equals("1")) return "";
         JSONArray videos = new JSONArray();
-        JSONObject searchResult = new JSONObject(req(searchUrl, getHeader(siteUrl + "/")));
+        JSONObject searchResult = new JSONObject(SpUtil.req(searchUrl, SpUtil.getHeader(siteUrl + "/")));
         JSONArray items = searchResult.optJSONArray("list");
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.getJSONObject(i);
@@ -136,9 +137,9 @@ public class XingYiYing extends BaseSpider {
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
         String lastUrl = id;
         int parse = 1;
-        String headerStr = getHeader().toString();
-        String html = req(lastUrl, getHeader(siteUrl + "/"));
-        String player_aaaa = find(Pattern.compile("player_aaaa=(.*?)</script>"), html);
+        String headerStr = SpUtil.getHeader().toString();
+        String html = SpUtil.req(lastUrl, SpUtil.getHeader(siteUrl + "/"));
+        String player_aaaa = SpUtil.find(Pattern.compile("player_aaaa=(.*?)</script>"), html);
         JSONObject jsonObject = new JSONObject(player_aaaa);
         String url = jsonObject.optString("url");
         if (url.contains(".m3u8") || url.contains(".mp4")) {
@@ -146,7 +147,7 @@ public class XingYiYing extends BaseSpider {
             parse = 0;
             Map<String, String> header = new HashMap<>();
             header.put("Accept", "*/*");
-            header.put("User-Agent", CHROME);
+            header.put("User-Agent", SpUtil.FIREFOX);
             headerStr = header.toString();
         }
 

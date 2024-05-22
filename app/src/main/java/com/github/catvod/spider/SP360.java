@@ -3,8 +3,9 @@ package com.github.catvod.spider;
 import android.content.Context;
 import android.text.TextUtils;
 
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.crawler.Spider;
 
+import com.github.catvod.utils.SpUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -21,14 +22,14 @@ import java.util.Map;
  * @author zhixc
  * 360
  */
-public class SP360 extends BaseSpider {
+public class SP360 extends Spider {
     // 包含要跳过的站点字符串
     private String skipSiteStr = "";
 
     private String reqBusy(String url, String breakFlag) throws Exception {
         String result = "";
         for (int k = 0; k < 8; k++) {
-            result = req(url, getHeader("https://api.web.360kan.com"));
+            result = SpUtil.req(url, SpUtil.getHeader("https://api.web.360kan.com"));
             if (result.contains(breakFlag)) break;
             Thread.sleep(500); // 休眠 500 毫秒，即 0.5 秒
         }
@@ -78,7 +79,7 @@ public class SP360 extends BaseSpider {
         JSONArray videos = new JSONArray();
         String hotUrl = "https://api.web.360kan.com/v1/rank?cat=2&callback=";
         String referer = "https://www.360kan.com/rank/dianying";
-        String html = req(hotUrl, getHeader(referer));
+        String html = SpUtil.req(hotUrl, SpUtil.getHeader(referer));
         JSONArray data = new JSONObject(html).optJSONArray("data");
         for (int i = 0; i < data.length(); i++) {
             JSONObject item = data.getJSONObject(i);
@@ -329,7 +330,7 @@ public class SP360 extends BaseSpider {
         String keyword = URLEncoder.encode(key);
         String searchUrl = "https://api.so.360kan.com/index?force_v=1&kw=" + keyword + "&from=&pageno=1&v_ap=1&tab=all";
         String referer = "https://so.360kan.com/?kw=" + keyword;
-        String rs = req(searchUrl, getHeader(referer));
+        String rs = SpUtil.req(searchUrl, SpUtil.getHeader(referer));
         JSONArray videos = new JSONArray();
         JSONArray rows = new JSONObject(rs)
                 .optJSONObject("data")
@@ -362,7 +363,7 @@ public class SP360 extends BaseSpider {
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
         HashMap<String, String> header = new HashMap<>();
-        header.put("User-Agent", CHROME);
+        header.put("User-Agent", SpUtil.CHROME);
         JSONObject result = new JSONObject()
                 .put("parse", 1) // 需要嗅探
                 .put("jx", 1) // 需要调用解析接口进行解析

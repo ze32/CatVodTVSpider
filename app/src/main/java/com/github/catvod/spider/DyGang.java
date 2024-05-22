@@ -1,6 +1,7 @@
 package com.github.catvod.spider;
 
-import com.github.catvod.spider.base.BaseSpider;
+import com.github.catvod.crawler.Spider;
+import com.github.catvod.utils.SpUtil;
 
 import okhttp3.MediaType;
 import okhttp3.Request;
@@ -30,7 +31,7 @@ import java.util.regex.Pattern;
  * 而电影类型的一条链接作为一个播放源，这样更适配
  * FongMi的影视，尤其是播放失败时自动换源。
  */
-public class DyGang extends BaseSpider {
+public class DyGang extends Spider {
     //  地址发布：https://www.dygang.me/
     //  可用的域名：
     //   http://www.dygangs.net
@@ -50,29 +51,23 @@ public class DyGang extends BaseSpider {
             String name = it.select("a:eq(0) > img:eq(0)").attr("alt");
             String pic = it.select("a:eq(0) > img:eq(0)").attr("src");
             String remark = "";
-
-            JSONObject vod = new JSONObject();
-            vod.put("vod_id", vodId);
-            vod.put("vod_name", name);
-            vod.put("vod_pic", pic);
-            vod.put("vod_remarks", remark);
-            videos.put(vod);
+            videos.put(SpUtil.vod(vodId, name, pic, remark));
         }
         return videos;
     }
 
     private String getActor(String html) {
-        String actor = find(Pattern.compile("◎演　　员　(.*?)</p", Pattern.DOTALL), html);
-        if ("".equals(actor)) actor = find(Pattern.compile("◎主　　演　(.*?)</p", Pattern.DOTALL), html);
+        String actor = SpUtil.find(Pattern.compile("◎演　　员　(.*?)</p", Pattern.DOTALL), html);
+        if ("".equals(actor)) actor = SpUtil.find(Pattern.compile("◎主　　演　(.*?)</p", Pattern.DOTALL), html);
         return actor.replaceAll("&middot;", "·").replaceAll("\r\n", "").replaceAll("<br />", "").replaceAll("&nbsp;", "").replaceAll("　　　　 　", " / ").replaceAll("　　　　　 ", " / ").replaceAll("　　　　　　", " / ");
     }
 
     private String getDirector(String html) {
-        return find(Pattern.compile("◎导　　演　(.*?)<br"), html).replaceAll("&middot;", "·");
+        return SpUtil.find(Pattern.compile("◎导　　演　(.*?)<br"), html).replaceAll("&middot;", "·");
     }
 
     private String getBrief(String html) {
-        return find(Pattern.compile("◎简　　介(.*?)<hr", Pattern.DOTALL), html).replaceAll("&middot;", "·").replaceAll("\r\n", "").replaceAll("&nbsp;", " ").replaceAll("　　　　", "");
+        return SpUtil.find(Pattern.compile("◎简　　介(.*?)<hr", Pattern.DOTALL), html).replaceAll("&middot;", "·").replaceAll("\r\n", "").replaceAll("&nbsp;", " ").replaceAll("　　　　", "");
     }
 
     private boolean isMovie(String vodId) {
@@ -123,22 +118,14 @@ public class DyGang extends BaseSpider {
             classes.put(c);
         }
         String f = "{\"my_dianying\": [{\"name\": \"类型\", \"key\": \"cateId\", \"value\": [{\"n\": \"最新电影(默认)\", \"v\": \"ys\"}, {\"n\": \"经典高清\", \"v\": \"bd\"}, {\"n\": \"国配电影\", \"v\": \"gy\"}, {\"n\": \"经典港片\", \"v\": \"gp\"}]}], \"my_dianshiju\": [{\"name\": \"类型\", \"key\": \"cateId\", \"value\": [{\"n\": \"国剧(默认)\", \"v\": \"dsj\"}, {\"n\": \"日韩剧\", \"v\": \"dsj1\"}, {\"n\": \"美剧\", \"v\": \"yx\"}]}]}";
-        JSONObject filterConfig = new JSONObject(f);
-        JSONArray videos = new JSONArray();
-        JSONObject result = new JSONObject();
-        result.put("class", classes);
-        result.put("filters", filterConfig);
-        result.put("list", videos);
-        return result.toString();
+        return SpUtil.result(classes, f, null);
     }
 
     @Override
     public String homeVideoContent() throws Exception {
-        String html = req(newCall(siteUrl, getHeader(siteUrl + "/")), "GBK");
+        String html = SpUtil.req(SpUtil.newCall(siteUrl, SpUtil.getHeader(siteUrl + "/")), "GBK");
         JSONArray videos = parseVodListFromDoc(html, true);
-        JSONObject result = new JSONObject();
-        result.put("list", videos);
-        return result.toString();
+        return SpUtil.result(videos);
     }
 
     @Override
@@ -147,35 +134,29 @@ public class DyGang extends BaseSpider {
         if ("my_dianshiju".equals(tid)) tid = extend.get("cateId") == null ? "dsj" : extend.get("cateId");
         String cateUrl = siteUrl + "/" + tid;
         if (!"1".equals(pg)) cateUrl += "/index_" + pg + ".htm";
-        String html = req(newCall(cateUrl, getHeader(siteUrl + "/")), "GBK");
+        String html = SpUtil.req(SpUtil.newCall(cateUrl, SpUtil.getHeader(siteUrl + "/")), "GBK");
         JSONArray videos = parseVodListFromDoc(html, false);
-        int page = Integer.parseInt(pg), count = 999, limit = videos.length(), total = Integer.MAX_VALUE;
-        JSONObject result = new JSONObject();
-        result.put("page", page);
-        result.put("pagecount", count);
-        result.put("limit", limit);
-        result.put("total", total);
-        result.put("list", videos);
-        return result.toString();
+        return SpUtil.result(pg, videos);
     }
 
     @Override
     public String detailContent(List<String> ids) throws Exception {
         String vodId = ids.get(0);
         String link = siteUrl + vodId;
-        String html = req(newCall(link, getHeader(siteUrl + "/")), "GBK");
-        String remark = "上映日期：" + removeHtmlTag(find(Pattern.compile("◎上映日期　(.*?)<br"), html));
+        Response response = SpUtil.newCall(link, SpUtil.getHeader(siteUrl + "/"));
+        String html = SpUtil.req(response, "GBK");
+        String remark = "上映日期：" + SpUtil.removeHtmlTag(SpUtil.find(Pattern.compile("◎上映日期　(.*?)<br"), html));
         //String remark = find(Pattern.compile("◎片　　长　(.*?)<br"), html);
         //String remark = find(Pattern.compile("◎语　　言　(.*?)<br"), html);
         String actor = getActor(html);
         String director = getDirector(html);
-        String brief = removeHtmlTag(getBrief(html)).replaceAll("　　　", "").replaceAll("　　", "");
+        String brief = SpUtil.removeHtmlTag(getBrief(html)).replaceAll("　　　", "").replaceAll("　　", "");
         Document doc = Jsoup.parse(html);
         Map<String, String> playMap = isMovie(vodId) ? parsePlayMapForMovieFromDoc(doc) : parsePlayMapFromDoc(doc);
 
-        String typeName = removeHtmlTag(find(Pattern.compile("◎类　　别　(.*?)<br"), html)).replaceAll(" / ", "/");
-        String year = find(Pattern.compile("◎年　　代　(.*?)<br"), html);
-        String area = removeHtmlTag(find(Pattern.compile("◎产　　地　(.*?)<br"), html));
+        String typeName = SpUtil.removeHtmlTag(SpUtil.find(Pattern.compile("◎类　　别　(.*?)<br"), html)).replaceAll(" / ", "/");
+        String year = SpUtil.find(Pattern.compile("◎年　　代　(.*?)<br"), html);
+        String area = SpUtil.removeHtmlTag(SpUtil.find(Pattern.compile("◎产　　地　(.*?)<br"), html));
 
         // 由于部分信息过长，故进行一些调整，将年份、地区等信息放到 类别、备注里面
         typeName += " 地区:" + area;
@@ -199,9 +180,7 @@ public class DyGang extends BaseSpider {
             vod.put("vod_play_from", String.join("$$$", playMap.keySet()));
             vod.put("vod_play_url", String.join("$$$", playMap.values()));
         }
-        JSONArray jsonArray = new JSONArray().put(vod);
-        JSONObject result = new JSONObject().put("list", jsonArray);
-        return result.toString();
+        return SpUtil.result(vod);
     }
 
     @Override
@@ -229,30 +208,23 @@ public class DyGang extends BaseSpider {
                     .header("Upgrade-Insecure-Requests", "1")
                     .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36")
                     .build();
-            Response response = newCall(request);
+            Response response = SpUtil.newCall(request);
             if (!response.isSuccessful()) return "";
             String[] split = String.valueOf(response.request().url()).split("\\?searchid=");
             nextSearchUrlPrefix = split[0] + "index.php?page=";
             nextSearchUrlSuffix = "&searchid=" + split[1];
-            html = req(response, "GBK");
+            html = SpUtil.req(response, "GBK");
         } else {
             int page = Integer.parseInt(pg) - 1;
             searchUrl = nextSearchUrlPrefix + page + nextSearchUrlSuffix;
-            html = req(newCall(searchUrl, getHeader()), "GBK");
+            html = SpUtil.req(SpUtil.newCall(searchUrl, SpUtil.getHeader()), "GBK");
         }
         JSONArray videos = parseVodListFromDoc(html, false);
-        JSONObject result = new JSONObject();
-        result.put("list", videos);
-        return result.toString();
+        return SpUtil.result(videos);
     }
 
     @Override
     public String playerContent(String flag, String id, List<String> vipFlags) throws Exception {
-        JSONObject result = new JSONObject();
-        result.put("parse", 0);
-        result.put("header", "");
-        result.put("playUrl", "");
-        result.put("url", id);
-        return result.toString();
+        return SpUtil.result(0, null, "", id);
     }
 }
